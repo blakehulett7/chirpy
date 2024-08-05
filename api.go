@@ -20,4 +20,7 @@ func (state *apiState) Handler(writer http.ResponseWriter, request *http.Request
 	writer.Write([]byte(formattedString))
 }
 
-func 
+func (state *apiState) Reset(writer http.ResponseWriter, request *http.Request) {
+	writer.WriteHeader(200)
+	state.serverHits = 0
+}

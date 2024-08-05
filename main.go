@@ -6,7 +6,9 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
-	apiStatePointer := &apiState{}
+	apiStatePointer := &apiState{
+		serverHits: 0,
+	}
 	serverPointer := &http.Server{
 		Addr:    "localhost:8080",
 		Handler: mux,
@@ -15,6 +17,7 @@ func main() {
 	mux.Handle("/app/*", apiStatePointer.HitCounter(defaultHandler))
 	mux.HandleFunc("/healthz", handler)
 	mux.HandleFunc("/metrics", apiStatePointer.Handler)
+	mux.HandleFunc("/reset", apiStatePointer.Reset)
 	serverPointer.ListenAndServe()
 }
 

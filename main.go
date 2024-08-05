@@ -14,6 +14,7 @@ func main() {
 	defaultHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/*", apiStatePointer.HitCounter(defaultHandler))
 	mux.HandleFunc("/healthz", handler)
+	mux.HandleFunc("/metrics", apiStatePointer.Handler)
 	serverPointer.ListenAndServe()
 }
 

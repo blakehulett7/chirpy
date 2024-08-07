@@ -16,7 +16,7 @@ func main() {
 	defaultHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
 	mux.Handle("/app/*", apiStateAddress.HitCounter(defaultHandler))
 	mux.HandleFunc("/api/reset", apiStateAddress.Reset)
-	mux.HandleFunc("POST /api/validate_chirp", apiStateAddress.Validate)
+	mux.HandleFunc("POST /api/chirps", apiStateAddress.Validate)
 	mux.HandleFunc("GET /api/healthz", handler)
 	mux.HandleFunc("GET /admin/metrics", apiStateAddress.Metrics)
 	serverAddress.ListenAndServe()

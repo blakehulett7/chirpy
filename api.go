@@ -30,15 +30,16 @@ func (state *apiState) Reset(writer http.ResponseWriter, request *http.Request) 
 	state.serverHits = 0
 }
 
-func (state *apiState) Validate(writer http.ResponseWriter, request *http.Request) {
+func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
 	type returnError struct {
 		Error string `json:"error"`
 	}
-	type returnCleaned struct {
-		CleanedBody string `json:"cleaned_body"`
+	type chirp struct {
+		Id   int    `json:"id"`
+		Body string `json:"body"`
 	}
 	decoder := json.NewDecoder(request.Body)
 	params := parameters{}
@@ -79,8 +80,8 @@ func (state *apiState) Validate(writer http.ResponseWriter, request *http.Reques
 			params.Body = strings.Join(cleanedWords, " ")
 		}
 	}
-	responseBody := returnCleaned{
-		CleanedBody: params.Body,
+	responseBody := chirp{
+		Body: params.Body,
 	}
 	responseData, error := json.Marshal(responseBody)
 	if error != nil {
@@ -91,6 +92,7 @@ func (state *apiState) Validate(writer http.ResponseWriter, request *http.Reques
 		JsonResponse(responseData, writer, 500)
 		return
 	}
+	responseBody.Id = IdCounter
 	JsonResponse(responseData, writer, 200)
 }
 

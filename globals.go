@@ -8,3 +8,7 @@ var metricsHTML string = `<html>
 </body>
 
 </html>`
+
+type parameters struct {
+	Body string `json:"body"`
+}

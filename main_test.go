@@ -25,7 +25,7 @@ func TestCreateChirp(test *testing.T) {
 		},
 	}
 	os.Remove(db.Path)
-	for index, _ := range haveChirpArray {
+	for index := range haveChirpArray {
 		if haveChirpArray[index] != wantChirpArray[index] {
 			fmt.Printf("have: %v", haveChirpArray)
 			fmt.Printf("want: %v", wantChirpArray)

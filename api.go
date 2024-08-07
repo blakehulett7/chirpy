@@ -6,6 +6,7 @@ import (
 	"internal/database"
 	"net/http"
 	"strings"
+    "errors"
 )
 
 type apiState struct {
@@ -32,9 +33,6 @@ func (state *apiState) Reset(writer http.ResponseWriter, request *http.Request) 
 }
 
 func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Request) {
-	type parameters struct {
-		Body string `json:"body"`
-	}
 	type returnError struct {
 		Error string `json:"error"`
 	}
@@ -49,13 +47,6 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 		JsonResponse(responseData, writer, 500)
 		return
 	}
-	if len(params.Body) > 140 {
-		responseBody := returnError{
-			Error: "chirp is too long",
-		}
-		responseData, _ := json.Marshal(responseBody)
-		JsonResponse(responseData, writer, 400)
-		return
 	}
 	normalizedBody := strings.ToLower(params.Body)
 	profanities := []string{
@@ -96,4 +87,15 @@ func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode in
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(statusCode)
 	writer.Write(responseData)
+}
+
+func paramBodyValidator(param parameters) (body string, error error) {
+	if len(params.Body) > 140 {
+		responseBody := returnError{
+			Error: "chirp is too long",
+		}
+		responseData, _ := json.Marshal(responseBody)
+		JsonResponse(responseData, writer, 400)
+		return "", errors.New("chirp too long")
+	param.Body
 }

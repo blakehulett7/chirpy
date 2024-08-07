@@ -2,15 +2,16 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"internal/database"
 	"net/http"
 	"strings"
-    "errors"
 )
 
 type apiState struct {
 	serverHits int
+	db         *database.Database
 }
 
 func (state *apiState) HitCounter(handler http.Handler) http.Handler {
@@ -33,20 +34,48 @@ func (state *apiState) Reset(writer http.ResponseWriter, request *http.Request) 
 }
 
 func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Request) {
-	type returnError struct {
-		Error string `json:"error"`
-	}
 	decoder := json.NewDecoder(request.Body)
 	params := parameters{}
 	error := decoder.Decode(&params)
 	if error != nil {
 		responseBody := returnError{
-			Error: "something went wrong",
+			Error: errors.New("something went wrong"),
 		}
 		responseData, _ := json.Marshal(responseBody)
 		JsonResponse(responseData, writer, 500)
 		return
 	}
+	params.Body, error = ChirpValidator(params)
+	if error != nil {
+		responseBody := returnError{
+			Error: error,
+		}
+		responseData, _ := json.Marshal(responseBody)
+		JsonResponse(responseData, writer, 500)
+		return
+	}
+	responseBody := state.db.CreateChirp(params.Body)
+	responseData, error := json.Marshal(responseBody)
+	if error != nil {
+		responseBody := returnError{
+			Error: errors.New("something went wrong"),
+		}
+		responseData, _ := json.Marshal(responseBody)
+		JsonResponse(responseData, writer, 400)
+		return
+	}
+	JsonResponse(responseData, writer, 201)
+}
+
+func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode int) {
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(statusCode)
+	writer.Write(responseData)
+}
+
+func ChirpValidator(params parameters) (body string, error error) {
+	if len(params.Body) > 140 {
+		return "", errors.New("chirp is too long")
 	}
 	normalizedBody := strings.ToLower(params.Body)
 	profanities := []string{
@@ -68,34 +97,5 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 			params.Body = strings.Join(cleanedWords, " ")
 		}
 	}
-	responseBody := database.Chirp{
-		Body: params.Body,
-	}
-	responseData, error := json.Marshal(responseBody)
-	if error != nil {
-		responseBody := returnError{
-			Error: "something went wrong",
-		}
-		responseData, _ := json.Marshal(responseBody)
-		JsonResponse(responseData, writer, 500)
-		return
-	}
-	JsonResponse(responseData, writer, 200)
-}
-
-func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode int) {
-	writer.Header().Add("Content-Type", "application/json")
-	writer.WriteHeader(statusCode)
-	writer.Write(responseData)
-}
-
-func paramBodyValidator(param parameters) (body string, error error) {
-	if len(params.Body) > 140 {
-		responseBody := returnError{
-			Error: "chirp is too long",
-		}
-		responseData, _ := json.Marshal(responseBody)
-		JsonResponse(responseData, writer, 400)
-		return "", errors.New("chirp too long")
-	param.Body
+	return params.Body, nil
 }

@@ -3,7 +3,6 @@ package database
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 )
@@ -43,15 +42,16 @@ func (databaseAddress *Database) SaveDatabase(db DatabaseStructure) {
 	os.WriteFile(databaseAddress.Path, data, 0666)
 }
 
-func (databaseAddress *Database) CreateChirp(body string) {
+func (databaseAddress *Database) CreateChirp(body string) Chirp {
 	db := databaseAddress.LoadDatabase()
 	id := len(db.Chirps) + 1
-	fmt.Println(id)
-	db.Chirps[id] = Chirp{
+	chirp := Chirp{
 		Id:   id,
 		Body: body,
 	}
+	db.Chirps[id] = chirp
 	databaseAddress.SaveDatabase(db)
+	return chirp
 }
 
 func (databaseAddress *Database) GetChirps() []Chirp {

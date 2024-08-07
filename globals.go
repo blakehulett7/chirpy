@@ -12,3 +12,7 @@ var metricsHTML string = `<html>
 type parameters struct {
 	Body string `json:"body"`
 }
+
+type returnError struct {
+	Error error `json:"error"`
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"internal/database"
 	"net/http"
 	"strings"
 )
@@ -36,10 +37,6 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 	}
 	type returnError struct {
 		Error string `json:"error"`
-	}
-	type chirp struct {
-		Id   int    `json:"id"`
-		Body string `json:"body"`
 	}
 	decoder := json.NewDecoder(request.Body)
 	params := parameters{}
@@ -80,7 +77,7 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 			params.Body = strings.Join(cleanedWords, " ")
 		}
 	}
-	responseBody := chirp{
+	responseBody := database.Chirp{
 		Body: params.Body,
 	}
 	responseData, error := json.Marshal(responseBody)
@@ -92,7 +89,6 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 		JsonResponse(responseData, writer, 500)
 		return
 	}
-	responseBody.Id = IdCounter
 	JsonResponse(responseData, writer, 200)
 }
 

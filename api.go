@@ -10,8 +10,10 @@ type apiState struct {
 }
 
 func (state *apiState) HitCounter(handler http.Handler) http.Handler {
-	state.serverHits++
-	return handler
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		state.serverHits++
+		handler.ServeHTTP(writer, request)
+	})
 }
 
 func (state *apiState) Handler(writer http.ResponseWriter, request *http.Request) {

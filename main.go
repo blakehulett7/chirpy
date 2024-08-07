@@ -6,19 +6,19 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
-	apiStatePointer := &apiState{
+	apiStateAddress := &apiState{
 		serverHits: 0,
 	}
-	serverPointer := &http.Server{
+	serverAddress := &http.Server{
 		Addr:    "localhost:8080",
 		Handler: mux,
 	}
 	defaultHandler := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
-	mux.Handle("/app/*", apiStatePointer.HitCounter(defaultHandler))
+	mux.Handle("/app/*", apiStateAddress.HitCounter(defaultHandler))
 	mux.HandleFunc("/healthz", handler)
-	mux.HandleFunc("/metrics", apiStatePointer.Handler)
-	mux.HandleFunc("/reset", apiStatePointer.Reset)
-	serverPointer.ListenAndServe()
+	mux.HandleFunc("/metrics", apiStateAddress.Handler)
+	mux.HandleFunc("/reset", apiStateAddress.Reset)
+	serverAddress.ListenAndServe()
 }
 
 func handler(writer http.ResponseWriter, request *http.Request) {

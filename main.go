@@ -23,6 +23,7 @@ func main() {
 	mux.Handle("/app/*", apiStateAddress.HitCounter(defaultHandler))
 	mux.HandleFunc("/api/reset", apiStateAddress.Reset)
 	mux.HandleFunc("POST /api/chirps", apiStateAddress.PostChirp)
+	mux.HandleFunc("GET /api/chirps", apiStateAddress.GetChirpy)
 	mux.HandleFunc("GET /api/healthz", handler)
 	mux.HandleFunc("GET /admin/metrics", apiStateAddress.Metrics)
 	serverAddress.ListenAndServe()

@@ -67,6 +67,10 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 	JsonResponse(responseData, writer, 201)
 }
 
+func (state *apiState) GetChirpy(writer http.ResponseWriter, request http.Request) {
+	chirpArray := state.db.GetChirps()
+}
+
 func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode int) {
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(statusCode)

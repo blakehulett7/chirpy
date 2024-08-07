@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 type apiState struct {
@@ -36,8 +37,8 @@ func (state *apiState) Validate(writer http.ResponseWriter, request *http.Reques
 	type returnError struct {
 		Error string `json:"error"`
 	}
-	type returnValid struct {
-		Valid bool `json:"valid"`
+	type returnCleaned struct {
+		CleanedBody string `json:"cleaned_body"`
 	}
 	decoder := json.NewDecoder(request.Body)
 	params := parameters{}
@@ -58,8 +59,28 @@ func (state *apiState) Validate(writer http.ResponseWriter, request *http.Reques
 		JsonResponse(responseData, writer, 400)
 		return
 	}
-	responseBody := returnValid{
-		Valid: true,
+	normalizedBody := strings.ToLower(params.Body)
+	profanities := []string{
+		"kerfuffle",
+		"sharbert",
+		"fornax",
+	}
+	for _, profanity := range profanities {
+		if strings.Contains(normalizedBody, profanity) {
+			words := strings.Split(params.Body, " ")
+			cleanedWords := []string{}
+			for _, word := range words {
+				if strings.ToLower(word) == profanity {
+					cleanedWords = append(cleanedWords, "****")
+					continue
+				}
+				cleanedWords = append(cleanedWords, word)
+			}
+			params.Body = strings.Join(cleanedWords, " ")
+		}
+	}
+	responseBody := returnCleaned{
+		CleanedBody: params.Body,
 	}
 	responseData, error := json.Marshal(responseBody)
 	if error != nil {

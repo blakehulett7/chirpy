@@ -88,6 +88,15 @@ func (state *apiState) GetaBitChirpy(writer http.ResponseWriter, request *http.R
 	JsonResponse(responseData, writer, 200)
 }
 
+func (state *apiState) CreateUser(writer http.ResponseWriter, request *http.Request) {
+	decoder := json.NewDecoder(request.Body)
+	userParameters := userParams{}
+	decoder.Decode(&userParameters)
+	responseBody := state.db.CreateUser(userParameters.Email)
+	responseData, _ := json.Marshal(responseBody)
+	JsonResponse(responseData, writer, 201)
+}
+
 func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode int) {
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(statusCode)

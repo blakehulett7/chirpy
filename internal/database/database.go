@@ -12,6 +12,11 @@ type Chirp struct {
 	Body string `json:"body"`
 }
 
+type User struct {
+	Id    int    `json:"id"`
+	Email string `json:"email"`
+}
+
 type Database struct {
 	Path  string
 	Mutex *sync.RWMutex
@@ -19,12 +24,16 @@ type Database struct {
 
 type DatabaseStructure struct {
 	Chirps map[int]Chirp `json:"chirps"`
+	Users  map[int]User  `json:"email"`
 }
 
 func (databaseAddress *Database) EnsureDatabase() {
 	_, error := os.ReadFile(databaseAddress.Path)
 	if errors.Is(error, os.ErrNotExist) {
-		db := DatabaseStructure{Chirps: map[int]Chirp{}}
+		db := DatabaseStructure{
+			Chirps: map[int]Chirp{},
+			Users:  map[int]User{},
+		}
 		data, _ := json.Marshal(db)
 		os.WriteFile(databaseAddress.Path, data, 0666)
 	}
@@ -61,4 +70,16 @@ func (databaseAddress *Database) GetChirps() []Chirp {
 		chirpArray = append(chirpArray, db.Chirps[i])
 	}
 	return chirpArray
+}
+
+func (databaseAddress *Database) CreateUser(email string) User {
+	db := databaseAddress.LoadDatabase()
+	id := len(db.Users) + 1
+	user := User{
+		Id:    id,
+		Email: email,
+	}
+	db.Users[id] = user
+	databaseAddress.SaveDatabase(db)
+	return user
 }

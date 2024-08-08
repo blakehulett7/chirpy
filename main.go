@@ -26,6 +26,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", apiStateAddress.GetChirpy)
 	mux.HandleFunc("GET /api/chirps/{id}", apiStateAddress.GetaBitChirpy)
 	mux.HandleFunc("GET /api/healthz", handler)
+	mux.HandleFunc("POST /api/users", apiStateAddress.CreateUser)
 	mux.HandleFunc("GET /admin/metrics", apiStateAddress.Metrics)
 	serverAddress.ListenAndServe()
 }

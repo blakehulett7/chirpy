@@ -16,3 +16,7 @@ type parameters struct {
 type returnError struct {
 	Error error `json:"error"`
 }
+
+type userParams struct {
+	Email string `json:"email"`
+}

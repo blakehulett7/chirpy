@@ -2,7 +2,8 @@ package database
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"os"
 	"sync"
 )
@@ -13,8 +14,9 @@ type Chirp struct {
 }
 
 type User struct {
-	Id    int    `json:"id"`
-	Email string `json:"email"`
+	Id       int    `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type Database struct {
@@ -28,15 +30,12 @@ type DatabaseStructure struct {
 }
 
 func (databaseAddress *Database) EnsureDatabase() {
-	_, error := os.ReadFile(databaseAddress.Path)
-	if errors.Is(error, os.ErrNotExist) {
-		db := DatabaseStructure{
-			Chirps: map[int]Chirp{},
-			Users:  map[int]User{},
-		}
-		data, _ := json.Marshal(db)
-		os.WriteFile(databaseAddress.Path, data, 0666)
+	db := DatabaseStructure{
+		Chirps: map[int]Chirp{},
+		Users:  map[int]User{},
 	}
+	data, _ := json.Marshal(db)
+	os.WriteFile(databaseAddress.Path, data, 0666)
 }
 
 func (databaseAddress *Database) LoadDatabase() DatabaseStructure {
@@ -72,14 +71,30 @@ func (databaseAddress *Database) GetChirps() []Chirp {
 	return chirpArray
 }
 
-func (databaseAddress *Database) CreateUser(email string) User {
+func (databaseAddress *Database) CreateUser(email string, password string) User {
 	db := databaseAddress.LoadDatabase()
 	id := len(db.Users) + 1
+	passwordHash, error := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	if error != nil {
+		fmt.Println(error)
+		return User{}
+	}
 	user := User{
-		Id:    id,
-		Email: email,
+		Id:       id,
+		Email:    email,
+		Password: string(passwordHash),
 	}
 	db.Users[id] = user
 	databaseAddress.SaveDatabase(db)
 	return user
+}
+
+func (databaseAddress *Database) GetUser(email string) (User, bool) {
+	db := databaseAddress.LoadDatabase()
+	for _, user := range db.Users {
+		if email == user.Email {
+			return user, true
+		}
+	}
+	return User{}, false
 }

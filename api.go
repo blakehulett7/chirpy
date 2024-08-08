@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"internal/database"
 	"net/http"
 	"strconv"
@@ -92,9 +93,34 @@ func (state *apiState) CreateUser(writer http.ResponseWriter, request *http.Requ
 	decoder := json.NewDecoder(request.Body)
 	userParameters := userParams{}
 	decoder.Decode(&userParameters)
-	responseBody := state.db.CreateUser(userParameters.Email)
+	_, userExists := state.db.GetUser(userParameters.Email)
+	if userExists {
+		fmt.Println("user already exists!")
+		return
+	}
+	user := state.db.CreateUser(userParameters.Email, userParameters.Password)
+	responseBody := responseUser{Id: user.Id, Email: user.Email}
 	responseData, _ := json.Marshal(responseBody)
 	JsonResponse(responseData, writer, 201)
+}
+
+func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) {
+	decoder := json.NewDecoder(request.Body)
+	userParameters := userParams{}
+	decoder.Decode(&userParameters)
+	user, userExists := state.db.GetUser(userParameters.Email)
+	if !userExists {
+		fmt.Println("user does not exist")
+		return
+	}
+	passwordsMatch := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userParameters.Password))
+	if passwordsMatch != nil {
+		JsonResponse([]byte("Unauthorized"), writer, 401)
+		return
+	}
+	responseUser := responseUser{Id: user.Id, Email: user.Email}
+	responseData, _ := json.Marshal(responseUser)
+	JsonResponse(responseData, writer, 200)
 }
 
 func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode int) {

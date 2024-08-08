@@ -18,5 +18,11 @@ type returnError struct {
 }
 
 type userParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type responseUser struct {
+	Id    int    `json:"id"`
 	Email string `json:"email"`
 }

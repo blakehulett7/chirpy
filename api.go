@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"internal/database"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -70,6 +71,20 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 func (state *apiState) GetChirpy(writer http.ResponseWriter, request *http.Request) {
 	chirpArray := state.db.GetChirps()
 	responseData, _ := json.Marshal(chirpArray)
+	JsonResponse(responseData, writer, 200)
+}
+
+func (state *apiState) GetaBitChirpy(writer http.ResponseWriter, request *http.Request) {
+	chirpArray := state.db.GetChirps()
+	indexString := request.PathValue("id")
+	index, _ := strconv.Atoi(indexString)
+	index--
+	if index < 0 || index >= len(chirpArray) {
+		JsonResponse([]byte("Not found"), writer, 404)
+		return
+	}
+	responseBody := chirpArray[index]
+	responseData, _ := json.Marshal(responseBody)
 	JsonResponse(responseData, writer, 200)
 }
 

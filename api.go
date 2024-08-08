@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/joho/godotenv/autoload"
-	"golang.org/x/crypto/bcrypt"
 	"internal/database"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type apiState struct {
@@ -100,8 +101,11 @@ func (state *apiState) CreateUser(writer http.ResponseWriter, request *http.Requ
 		fmt.Println("user already exists!")
 		return
 	}
-	user := state.db.CreateUser(userParameters.Email, userParameters.Password)
-	responseBody := responseUser{Id: user.Id, Email: user.Email}
+	if userParameters.ExpiresInSeconds == 0 || userParameters.ExpiresInSeconds > 24*60*60 {
+		userParameters.ExpiresInSeconds = 24 * 60 * 60
+	}
+	user := state.db.CreateUser(database.UserParams(userParameters))
+	responseBody := responseUser{Id: user.Id, Email: user.Email, Token: user.Token}
 	responseData, _ := json.Marshal(responseBody)
 	JsonResponse(responseData, writer, 201)
 }

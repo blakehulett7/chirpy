@@ -3,9 +3,11 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"sync"
+	"time"
 )
 
 type Chirp struct {
@@ -17,6 +19,7 @@ type User struct {
 	Id       int    `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Token    string `json:"token"`
 }
 
 type Database struct {
@@ -27,6 +30,12 @@ type Database struct {
 type DatabaseStructure struct {
 	Chirps map[int]Chirp `json:"chirps"`
 	Users  map[int]User  `json:"email"`
+}
+
+type UserParams struct {
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
 }
 
 func (databaseAddress *Database) EnsureDatabase() {
@@ -71,18 +80,28 @@ func (databaseAddress *Database) GetChirps() []Chirp {
 	return chirpArray
 }
 
-func (databaseAddress *Database) CreateUser(email string, password string) User {
+func (databaseAddress *Database) CreateUser(parameters UserParams) User {
 	db := databaseAddress.LoadDatabase()
 	id := len(db.Users) + 1
-	passwordHash, error := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	passwordHash, error := bcrypt.GenerateFromPassword([]byte(parameters.Password), bcrypt.MinCost)
 	if error != nil {
 		fmt.Println(error)
 		return User{}
 	}
+	issued := jwt.NewNumericDate(time.Now())
+	expires := jwt.NewNumericDate(time.Now().Add(time.Duration(parameters.ExpiresInSeconds)))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "chirpy",
+		IssuedAt:  issued,
+		ExpiresAt: expires,
+		Subject:   string(id),
+	})
+	signedToken, _ := token.SignedString([]byte(parameters.Password))
 	user := User{
 		Id:       id,
-		Email:    email,
+		Email:    parameters.Email,
 		Password: string(passwordHash),
+		Token:    signedToken,
 	}
 	db.Users[id] = user
 	databaseAddress.SaveDatabase(db)

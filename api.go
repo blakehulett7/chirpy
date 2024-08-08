@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/joho/godotenv/autoload"
 	"golang.org/x/crypto/bcrypt"
 	"internal/database"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 type apiState struct {
 	serverHits int
 	db         *database.Database
+	jwtSecret  string
 }
 
 func (state *apiState) HitCounter(handler http.Handler) http.Handler {

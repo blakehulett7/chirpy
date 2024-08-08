@@ -1,11 +1,14 @@
 package main
 
 import (
+	"github.com/joho/godotenv"
 	"internal/database"
 	"net/http"
+	"os"
 )
 
 func main() {
+	godotenv.Load()
 	db := &database.Database{
 		Path: "./database.json",
 	}
@@ -14,6 +17,7 @@ func main() {
 	apiStateAddress := &apiState{
 		serverHits: 0,
 		db:         db,
+		jwtSecret:  os.Getenv("JWT_SECRET"),
 	}
 	serverAddress := &http.Server{
 		Addr:    "localhost:8080",

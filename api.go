@@ -67,8 +67,10 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 	JsonResponse(responseData, writer, 201)
 }
 
-func (state *apiState) GetChirpy(writer http.ResponseWriter, request http.Request) {
+func (state *apiState) GetChirpy(writer http.ResponseWriter, request *http.Request) {
 	chirpArray := state.db.GetChirps()
+	responseData, _ := json.Marshal(chirpArray)
+	JsonResponse(responseData, writer, 200)
 }
 
 func JsonResponse(responseData []byte, writer http.ResponseWriter, statusCode int) {

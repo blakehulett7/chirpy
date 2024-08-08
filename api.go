@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 	"internal/database"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type apiState struct {
@@ -101,18 +101,15 @@ func (state *apiState) CreateUser(writer http.ResponseWriter, request *http.Requ
 		fmt.Println("user already exists!")
 		return
 	}
-	if userParameters.ExpiresInSeconds == 0 || userParameters.ExpiresInSeconds > 24*60*60 {
-		userParameters.ExpiresInSeconds = 24 * 60 * 60
-	}
-	user := state.db.CreateUser(database.UserParams(userParameters))
-	responseBody := responseUser{Id: user.Id, Email: user.Email, Token: user.Token}
+	user := state.db.CreateUser(userParameters.Email, userParameters.Password)
+	responseBody := responseUser{Id: user.Id, Email: user.Email}
 	responseData, _ := json.Marshal(responseBody)
 	JsonResponse(responseData, writer, 201)
 }
 
 func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) {
 	decoder := json.NewDecoder(request.Body)
-	userParameters := userParams{}
+	userParameters := LoginParams{}
 	decoder.Decode(&userParameters)
 	user, userExists := state.db.GetUser(userParameters.Email)
 	if !userExists {
@@ -124,8 +121,19 @@ func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) 
 		JsonResponse([]byte("Unauthorized"), writer, 401)
 		return
 	}
-	responseUser := responseUser{Id: user.Id, Email: user.Email}
-	responseData, _ := json.Marshal(responseUser)
+	MaxExpiryPeriod := 24 * time.Hour
+	if userParameters.ExpiresInSeconds <= 0 || userParameters.ExpiresInSeconds > int(MaxExpiryPeriod/time.Second) {
+		userParameters.ExpiresInSeconds = int(MaxExpiryPeriod / time.Second)
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "chirpy",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(userParameters.ExpiresInSeconds))),
+		Subject:   string(user.Id),
+	})
+	signedToken, _ := token.SignedString([]byte(user.Password))
+	responseLogin := responseLogin{Id: user.Id, Email: user.Email, Token: signedToken}
+	responseData, _ := json.Marshal(responseLogin)
 	JsonResponse(responseData, writer, 200)
 }
 

@@ -3,11 +3,9 @@ package database
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"sync"
-	"time"
 )
 
 type Chirp struct {
@@ -80,28 +78,19 @@ func (databaseAddress *Database) GetChirps() []Chirp {
 	return chirpArray
 }
 
-func (databaseAddress *Database) CreateUser(parameters UserParams) User {
+func (databaseAddress *Database) CreateUser(email string, password string) User {
 	db := databaseAddress.LoadDatabase()
 	id := len(db.Users) + 1
-	passwordHash, error := bcrypt.GenerateFromPassword([]byte(parameters.Password), bcrypt.MinCost)
+	passwordHash, error := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
 	if error != nil {
 		fmt.Println(error)
 		return User{}
 	}
-	issued := jwt.NewNumericDate(time.Now())
-	expires := jwt.NewNumericDate(time.Now().Add(time.Duration(parameters.ExpiresInSeconds)))
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Issuer:    "chirpy",
-		IssuedAt:  issued,
-		ExpiresAt: expires,
-		Subject:   string(id),
-	})
-	signedToken, _ := token.SignedString([]byte(parameters.Password))
 	user := User{
 		Id:       id,
-		Email:    parameters.Email,
+		Email:    email,
 		Password: string(passwordHash),
-		Token:    signedToken,
+		Token:    "",
 	}
 	db.Users[id] = user
 	databaseAddress.SaveDatabase(db)

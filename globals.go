@@ -18,12 +18,22 @@ type returnError struct {
 }
 
 type userParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginParams struct {
 	Email            string `json:"email"`
 	Password         string `json:"password"`
 	ExpiresInSeconds int    `json:"expires_in_seconds,omitempty"`
 }
 
 type responseUser struct {
+	Id    int    `json:"id"`
+	Email string `json:"email"`
+}
+
+type responseLogin struct {
 	Id    int    `json:"id"`
 	Email string `json:"email"`
 	Token string `json:"token"`

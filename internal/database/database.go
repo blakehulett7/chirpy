@@ -106,3 +106,15 @@ func (databaseAddress *Database) GetUser(email string) (User, bool) {
 	}
 	return User{}, false
 }
+
+func (databaseAddress *Database) UpdateUserToken(email string, token string) {
+	db := databaseAddress.LoadDatabase()
+	for _, user := range db.Users {
+		if email == user.Email {
+			user.Token = token
+			databaseAddress.SaveDatabase(db)
+			return
+		}
+	}
+	fmt.Println("Email Not Found")
+}

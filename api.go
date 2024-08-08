@@ -132,6 +132,7 @@ func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) 
 		Subject:   string(user.Id),
 	})
 	signedToken, _ := token.SignedString([]byte(user.Password))
+	state.db.UpdateUserToken(user.Email, signedToken)
 	responseLogin := responseLogin{Id: user.Id, Email: user.Email, Token: signedToken}
 	responseData, _ := json.Marshal(responseLogin)
 	JsonResponse(responseData, writer, 200)

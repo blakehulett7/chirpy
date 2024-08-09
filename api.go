@@ -40,9 +40,26 @@ func (state *apiState) Reset(writer http.ResponseWriter, request *http.Request) 
 }
 
 func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Request) {
+	bearerToken := request.Header.Get("Authorization")
+	givenToken, _ := strings.CutPrefix(bearerToken, "Bearer ")
+	claims := jwt.RegisteredClaims{}
+	token, error := jwt.ParseWithClaims(givenToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		return state.jwtSecret, nil
+	})
+	if error != nil {
+		fmt.Println(error)
+		JsonResponse([]byte("Unauthorized"), writer, 401)
+		return
+	}
+	tokenClaims, ok := token.Claims.(*jwt.RegisteredClaims)
+	if !ok {
+		fmt.Println(ok)
+		return
+	}
+	userId, _ := strconv.Atoi(tokenClaims.Subject)
 	decoder := json.NewDecoder(request.Body)
 	params := parameters{}
-	error := decoder.Decode(&params)
+	error = decoder.Decode(&params)
 	if error != nil {
 		responseBody := returnError{
 			Error: errors.New("something went wrong"),
@@ -60,7 +77,7 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 		JsonResponse(responseData, writer, 500)
 		return
 	}
-	responseBody := state.db.CreateChirp(params.Body)
+	responseBody := state.db.CreateChirp(params.Body, userId)
 	responseData, error := json.Marshal(responseBody)
 	if error != nil {
 		responseBody := returnError{

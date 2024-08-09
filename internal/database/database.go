@@ -12,8 +12,9 @@ import (
 )
 
 type Chirp struct {
-	Id   int    `json:"id"`
-	Body string `json:"body"`
+	Id       int    `json:"id"`
+	Body     string `json:"body"`
+	AuthorId int    `json:"author_id"`
 }
 
 type User struct {
@@ -70,12 +71,13 @@ func (databaseAddress *Database) SaveDatabase(db DatabaseStructure) {
 	os.WriteFile(databaseAddress.Path, data, 0666)
 }
 
-func (databaseAddress *Database) CreateChirp(body string) Chirp {
+func (databaseAddress *Database) CreateChirp(body string, authorId int) Chirp {
 	db := databaseAddress.LoadDatabase()
 	id := len(db.Chirps) + 1
 	chirp := Chirp{
-		Id:   id,
-		Body: body,
+		Id:       id,
+		Body:     body,
+		AuthorId: authorId,
 	}
 	db.Chirps[id] = chirp
 	databaseAddress.SaveDatabase(db)

@@ -29,8 +29,9 @@ type LoginParams struct {
 }
 
 type responseUser struct {
-	Id    int    `json:"id"`
-	Email string `json:"email"`
+	Id          int    `json:"id"`
+	Email       string `json:"email"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 type responseLogin struct {
@@ -38,8 +39,16 @@ type responseLogin struct {
 	Email        string `json:"email"`
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
+	IsChirpyRed  bool   `json:"is_chirpy_red"`
 }
 
 type responseRefresh struct {
 	Token string `json:"token"`
+}
+
+type polkaParams struct {
+	Event string `json:"event"`
+	Data  struct {
+		UserID int `json:"user_id"`
+	} `json:"data"`
 }

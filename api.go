@@ -120,7 +120,7 @@ func (state *apiState) CreateUser(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 	user := state.db.CreateUser(userParameters.Email, userParameters.Password)
-	responseBody := responseUser{Id: user.Id, Email: user.Email}
+	responseBody := responseUser{Id: user.Id, Email: user.Email, IsChirpyRed: user.IsChirpyRed}
 	responseData, _ := json.Marshal(responseBody)
 	JsonResponse(responseData, writer, 201)
 }
@@ -148,7 +148,13 @@ func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) 
 	})
 	signedToken, _ := token.SignedString(state.jwtSecret)
 	state.db.UpdateUserToken(user.Email, signedToken)
-	responseLogin := responseLogin{Id: user.Id, Email: user.Email, Token: signedToken, RefreshToken: user.RefreshToken.Token}
+	responseLogin := responseLogin{
+		Id:           user.Id,
+		Email:        user.Email,
+		Token:        signedToken,
+		RefreshToken: user.RefreshToken.Token,
+		IsChirpyRed:  user.IsChirpyRed,
+	}
 	responseData, _ := json.Marshal(responseLogin)
 	JsonResponse(responseData, writer, 200)
 }
@@ -280,6 +286,24 @@ func (state *apiState) DeleteChirp(writer http.ResponseWriter, request *http.Req
 	if error != nil {
 		JsonResponse([]byte("Unauthorized"), writer, 403)
 		return
+	}
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(204)
+}
+
+func (state *apiState) UpgradeUser(writer http.ResponseWriter, request *http.Request) {
+	decoder := json.NewDecoder(request.Body)
+	userParameters := polkaParams{}
+	decoder.Decode(&userParameters)
+	if userParameters.Event != "user.upgraded" {
+		writer.Header().Add("Content-Type", "application/json")
+		writer.WriteHeader(204)
+		return
+	}
+	error := state.db.UpgradeUser(userParameters.Data.UserID)
+	if error != nil {
+		writer.Header().Add("Content-Type", "application/json")
+		writer.WriteHeader(404)
 	}
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(204)

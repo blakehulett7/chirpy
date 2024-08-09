@@ -24,6 +24,7 @@ type User struct {
 	Password     string       `json:"password"`
 	Token        string       `json:"token"`
 	RefreshToken RefreshToken `json:"refresh_token"`
+	IsChirpyRed  bool         `json:"is_chirpy_red"`
 }
 
 type RefreshToken struct {
@@ -116,6 +117,7 @@ func (databaseAddress *Database) CreateUser(email string, password string) User 
 		Password:     string(passwordHash),
 		Token:        "",
 		RefreshToken: refreshToken,
+		IsChirpyRed:  false,
 	}
 	db.Users[id] = user
 	databaseAddress.SaveDatabase(db)
@@ -158,6 +160,7 @@ func (databaseAddress *Database) UpdateUserCredentials(id int, email string, pas
 		Password:     string(passwordHash),
 		Token:        oldUserInfo.Token,
 		RefreshToken: oldUserInfo.RefreshToken,
+		IsChirpyRed:  oldUserInfo.IsChirpyRed,
 	}
 	db.Users[id] = updatedUserInfo
 	databaseAddress.SaveDatabase(db)
@@ -192,5 +195,17 @@ func (databaseAddress *Database) DeleteChirp(chirpId int, authorId int) error {
 		return errors.New("You are... NOT the author!")
 	}
 	delete(db.Chirps, chirpId)
+	return nil
+}
+
+func (databaseAddress *Database) UpgradeUser(userId int) error {
+	db := databaseAddress.LoadDatabase()
+	user, exists := db.Users[userId]
+	if !exists {
+		return errors.New("You are... NOT a user!")
+	}
+	user.IsChirpyRed = true
+	db.Users[userId] = user
+	databaseAddress.SaveDatabase(db)
 	return nil
 }

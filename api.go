@@ -18,6 +18,7 @@ type apiState struct {
 	serverHits int
 	db         *database.Database
 	jwtSecret  []byte
+	polkaKey   string
 }
 
 func (state *apiState) HitCounter(handler http.Handler) http.Handler {
@@ -292,6 +293,13 @@ func (state *apiState) DeleteChirp(writer http.ResponseWriter, request *http.Req
 }
 
 func (state *apiState) UpgradeUser(writer http.ResponseWriter, request *http.Request) {
+	bearerToken := request.Header.Get("Authorization")
+	givenToken, _ := strings.CutPrefix(bearerToken, "ApiKey ")
+	if givenToken != state.polkaKey {
+		writer.Header().Add("Content-Type", "application/json")
+		writer.WriteHeader(401)
+		return
+	}
 	decoder := json.NewDecoder(request.Body)
 	userParameters := polkaParams{}
 	decoder.Decode(&userParameters)

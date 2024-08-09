@@ -21,6 +21,7 @@ func main() {
 		serverHits: 0,
 		db:         db,
 		jwtSecret:  []byte(os.Getenv("JWT_SECRET")),
+		polkaKey:   os.Getenv("POLKA"),
 	}
 	serverAddress := &http.Server{
 		Addr:    "localhost:8080",

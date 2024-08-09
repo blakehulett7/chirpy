@@ -17,7 +17,7 @@ func main() {
 	apiStateAddress := &apiState{
 		serverHits: 0,
 		db:         db,
-		jwtSecret:  os.Getenv("JWT_SECRET"),
+		jwtSecret:  []byte(os.Getenv("JWT_SECRET")),
 	}
 	serverAddress := &http.Server{
 		Addr:    "localhost:8080",
@@ -31,6 +31,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps/{id}", apiStateAddress.GetaBitChirpy)
 	mux.HandleFunc("GET /api/healthz", handler)
 	mux.HandleFunc("POST /api/users", apiStateAddress.CreateUser)
+	mux.HandleFunc("PUT /api/users", apiStateAddress.UpdateUser)
 	mux.HandleFunc("POST /api/login", apiStateAddress.Login)
 	mux.HandleFunc("GET /admin/metrics", apiStateAddress.Metrics)
 	serverAddress.ListenAndServe()

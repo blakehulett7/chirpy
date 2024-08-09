@@ -118,3 +118,22 @@ func (databaseAddress *Database) UpdateUserToken(email string, token string) {
 	}
 	fmt.Println("Email Not Found")
 }
+
+func (databaseAddress *Database) UpdateUserCredentials(id int, email string, password string) User {
+	db := databaseAddress.LoadDatabase()
+	oldUserInfo := db.Users[id]
+	passwordHash, error := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	if error != nil {
+		fmt.Println(error)
+		return User{}
+	}
+	updatedUserInfo := User{
+		Id:       id,
+		Email:    email,
+		Password: string(passwordHash),
+		Token:    oldUserInfo.Token,
+	}
+	db.Users[id] = updatedUserInfo
+	databaseAddress.SaveDatabase(db)
+	return updatedUserInfo
+}

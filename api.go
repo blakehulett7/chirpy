@@ -4,19 +4,20 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/bcrypt"
 	"internal/database"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type apiState struct {
 	serverHits int
 	db         *database.Database
-	jwtSecret  string
+	jwtSecret  []byte
 }
 
 func (state *apiState) HitCounter(handler http.Handler) http.Handler {
@@ -113,28 +114,58 @@ func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) 
 	decoder.Decode(&userParameters)
 	user, userExists := state.db.GetUser(userParameters.Email)
 	if !userExists {
-		fmt.Println("user does not exist")
+		JsonResponse([]byte("Unauthorized, user does not exist"), writer, 401)
 		return
 	}
 	passwordsMatch := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userParameters.Password))
 	if passwordsMatch != nil {
-		JsonResponse([]byte("Unauthorized"), writer, 401)
+		JsonResponse([]byte("Unauthorized, password incorrect"), writer, 401)
 		return
 	}
-	MaxExpiryPeriod := 24 * time.Hour
-	if userParameters.ExpiresInSeconds <= 0 || userParameters.ExpiresInSeconds > int(MaxExpiryPeriod/time.Second) {
-		userParameters.ExpiresInSeconds = int(MaxExpiryPeriod / time.Second)
+	expires := time.Now().Add(time.Duration(24*60*60) * time.Second)
+	if userParameters.ExpiresInSeconds > 0 && userParameters.ExpiresInSeconds < 24*60*60 {
+		expires = time.Now().Add(time.Duration(userParameters.ExpiresInSeconds) * time.Second)
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(userParameters.ExpiresInSeconds))),
-		Subject:   string(user.Id),
+		ExpiresAt: jwt.NewNumericDate(expires),
+		Subject:   strconv.Itoa(user.Id),
 	})
-	signedToken, _ := token.SignedString([]byte(user.Password))
+	signedToken, _ := token.SignedString(state.jwtSecret)
 	state.db.UpdateUserToken(user.Email, signedToken)
 	responseLogin := responseLogin{Id: user.Id, Email: user.Email, Token: signedToken}
 	responseData, _ := json.Marshal(responseLogin)
+	JsonResponse(responseData, writer, 200)
+}
+
+func (state *apiState) UpdateUser(writer http.ResponseWriter, request *http.Request) {
+	decoder := json.NewDecoder(request.Body)
+	userParameters := LoginParams{}
+	decoder.Decode(&userParameters)
+	bearerToken := request.Header.Get("Authorization")
+	givenToken, _ := strings.CutPrefix(bearerToken, "Bearer ")
+	claims := jwt.RegisteredClaims{}
+	token, error := jwt.ParseWithClaims(givenToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		return state.jwtSecret, nil
+	})
+	if error != nil {
+		fmt.Println(error)
+		JsonResponse([]byte("Unauthorized"), writer, 401)
+		return
+	}
+	tokenClaims, ok := token.Claims.(*jwt.RegisteredClaims)
+	if !ok {
+		fmt.Println(ok)
+		return
+	}
+	userId, _ := strconv.Atoi(tokenClaims.Subject)
+	updatedUser := state.db.UpdateUserCredentials(userId, userParameters.Email, userParameters.Password)
+	responseBody := responseUser{
+		Id:    updatedUser.Id,
+		Email: updatedUser.Email,
+	}
+	responseData, _ := json.Marshal(responseBody)
 	JsonResponse(responseData, writer, 200)
 }
 

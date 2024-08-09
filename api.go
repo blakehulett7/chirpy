@@ -122,10 +122,7 @@ func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) 
 		JsonResponse([]byte("Unauthorized, password incorrect"), writer, 401)
 		return
 	}
-	expires := time.Now().Add(time.Duration(24*60*60) * time.Second)
-	if userParameters.ExpiresInSeconds > 0 && userParameters.ExpiresInSeconds < 24*60*60 {
-		expires = time.Now().Add(time.Duration(userParameters.ExpiresInSeconds) * time.Second)
-	}
+	expires := time.Now().Add(time.Duration(60*60) * time.Second)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -134,7 +131,7 @@ func (state *apiState) Login(writer http.ResponseWriter, request *http.Request) 
 	})
 	signedToken, _ := token.SignedString(state.jwtSecret)
 	state.db.UpdateUserToken(user.Email, signedToken)
-	responseLogin := responseLogin{Id: user.Id, Email: user.Email, Token: signedToken}
+	responseLogin := responseLogin{Id: user.Id, Email: user.Email, Token: signedToken, RefreshToken: user.RefreshToken.Token}
 	responseData, _ := json.Marshal(responseLogin)
 	JsonResponse(responseData, writer, 200)
 }
@@ -200,4 +197,31 @@ func ChirpValidator(params parameters) (body string, error error) {
 		}
 	}
 	return params.Body, nil
+}
+
+func (state *apiState) Refresh(writer http.ResponseWriter, request *http.Request) {
+	bearerToken := request.Header.Get("Authorization")
+	givenToken, _ := strings.CutPrefix(bearerToken, "Bearer ")
+	valid, user := state.db.RefreshTokenIsValid(givenToken)
+	if !valid {
+		JsonResponse([]byte("Unauthorized, bad refresh token"), writer, 401)
+		return
+	}
+	token := state.CreateToken(user)
+	state.db.UpdateUserToken(user.Email, token)
+	responseBody := responseRefresh{Token: token}
+	responseData, _ := json.Marshal(responseBody)
+	JsonResponse(responseData, writer, 200)
+}
+
+func (state *apiState) CreateToken(user database.User) string {
+	expires := time.Now().Add(time.Duration(60*60) * time.Second)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Issuer:    "chirpy",
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(expires),
+		Subject:   strconv.Itoa(user.Id),
+	})
+	signedToken, _ := token.SignedString(state.jwtSecret)
+	return signedToken
 }

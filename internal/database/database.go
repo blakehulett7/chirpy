@@ -1,11 +1,14 @@
 package database
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"os"
 	"sync"
+	"time"
 )
 
 type Chirp struct {
@@ -14,10 +17,16 @@ type Chirp struct {
 }
 
 type User struct {
-	Id       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Token    string `json:"token"`
+	Id           int          `json:"id"`
+	Email        string       `json:"email"`
+	Password     string       `json:"password"`
+	Token        string       `json:"token"`
+	RefreshToken RefreshToken `json:"refresh_token"`
+}
+
+type RefreshToken struct {
+	Token   string
+	Expires time.Time
 }
 
 type Database struct {
@@ -46,6 +55,8 @@ func (databaseAddress *Database) EnsureDatabase() {
 }
 
 func (databaseAddress *Database) LoadDatabase() DatabaseStructure {
+	databaseAddress.Mutex.Lock()
+	defer databaseAddress.Mutex.Unlock()
 	dbData, _ := os.ReadFile(databaseAddress.Path)
 	db := DatabaseStructure{}
 	json.Unmarshal(dbData, &db)
@@ -53,6 +64,8 @@ func (databaseAddress *Database) LoadDatabase() DatabaseStructure {
 }
 
 func (databaseAddress *Database) SaveDatabase(db DatabaseStructure) {
+	databaseAddress.Mutex.Lock()
+	defer databaseAddress.Mutex.Unlock()
 	data, _ := json.Marshal(db)
 	os.WriteFile(databaseAddress.Path, data, 0666)
 }
@@ -86,11 +99,22 @@ func (databaseAddress *Database) CreateUser(email string, password string) User 
 		fmt.Println(error)
 		return User{}
 	}
+	hexData := make([]byte, 256)
+	rand.Read(hexData)
+	hexString := hex.EncodeToString(hexData)
+	fmt.Println("hexstring: ", hexString)
+	expires := time.Now().Add(time.Duration(60 * 60 * 24 * 60))
+	refreshToken := RefreshToken{
+		Token:   hexString,
+		Expires: expires,
+	}
+	fmt.Println("refreshtoken: ", refreshToken)
 	user := User{
-		Id:       id,
-		Email:    email,
-		Password: string(passwordHash),
-		Token:    "",
+		Id:           id,
+		Email:        email,
+		Password:     string(passwordHash),
+		Token:        "",
+		RefreshToken: refreshToken,
 	}
 	db.Users[id] = user
 	databaseAddress.SaveDatabase(db)
@@ -136,4 +160,19 @@ func (databaseAddress *Database) UpdateUserCredentials(id int, email string, pas
 	db.Users[id] = updatedUserInfo
 	databaseAddress.SaveDatabase(db)
 	return updatedUserInfo
+}
+
+func (databaseAddress *Database) RefreshTokenIsValid(RefreshToken string) (bool, User) {
+	db := databaseAddress.LoadDatabase()
+	fmt.Println(db.Users)
+	for _, user := range db.Users {
+		fmt.Println(RefreshToken, "<div>", user.RefreshToken.Token)
+		if RefreshToken == user.RefreshToken.Token {
+			fmt.Println("Found refresh token")
+			if time.Now().Before(user.RefreshToken.Expires) {
+				return true, user
+			}
+		}
+	}
+	return false, User{}
 }

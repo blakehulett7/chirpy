@@ -1,16 +1,19 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
 	"internal/database"
 	"net/http"
 	"os"
+	"sync"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	godotenv.Load()
 	db := &database.Database{
-		Path: "./database.json",
+		Path:  "./database.json",
+		Mutex: &sync.RWMutex{},
 	}
 	db.EnsureDatabase()
 	mux := http.NewServeMux()
@@ -30,6 +33,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", apiStateAddress.GetChirpy)
 	mux.HandleFunc("GET /api/chirps/{id}", apiStateAddress.GetaBitChirpy)
 	mux.HandleFunc("GET /api/healthz", handler)
+	mux.HandleFunc("POST /api/refresh", apiStateAddress.Refresh)
 	mux.HandleFunc("POST /api/users", apiStateAddress.CreateUser)
 	mux.HandleFunc("PUT /api/users", apiStateAddress.UpdateUser)
 	mux.HandleFunc("POST /api/login", apiStateAddress.Login)

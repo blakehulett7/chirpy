@@ -34,7 +34,12 @@ type responseUser struct {
 }
 
 type responseLogin struct {
-	Id    int    `json:"id"`
-	Email string `json:"email"`
+	Id           int    `json:"id"`
+	Email        string `json:"email"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type responseRefresh struct {
 	Token string `json:"token"`
 }

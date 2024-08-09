@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
 	"os"
@@ -183,4 +184,13 @@ func (databaseAddress *Database) RevokeRefreshToken(user User) {
 	user.RefreshToken = RefreshToken{}
 	db.Users[user.Id] = user
 	databaseAddress.SaveDatabase(db)
+}
+
+func (databaseAddress *Database) DeleteChirp(chirpId int, authorId int) error {
+	db := databaseAddress.LoadDatabase()
+	if authorId != db.Chirps[chirpId].AuthorId {
+		return errors.New("You are... NOT the author!")
+	}
+	delete(db.Chirps, chirpId)
+	return nil
 }

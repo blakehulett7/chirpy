@@ -255,3 +255,32 @@ func (state *apiState) Revoke(writer http.ResponseWriter, request *http.Request)
 	writer.Header().Add("Content-Type", "application/json")
 	writer.WriteHeader(204)
 }
+
+func (state *apiState) DeleteChirp(writer http.ResponseWriter, request *http.Request) {
+	bearerToken := request.Header.Get("Authorization")
+	givenToken, _ := strings.CutPrefix(bearerToken, "Bearer ")
+	claims := jwt.RegisteredClaims{}
+	token, error := jwt.ParseWithClaims(givenToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		return state.jwtSecret, nil
+	})
+	if error != nil {
+		fmt.Println(error)
+		JsonResponse([]byte("Unauthorized"), writer, 404)
+		return
+	}
+	tokenClaims, ok := token.Claims.(*jwt.RegisteredClaims)
+	if !ok {
+		fmt.Println(ok)
+		return
+	}
+	userId, _ := strconv.Atoi(tokenClaims.Subject)
+	chirpIdString := request.PathValue("id")
+	chripId, _ := strconv.Atoi(chirpIdString)
+	error = state.db.DeleteChirp(chripId, userId)
+	if error != nil {
+		JsonResponse([]byte("Unauthorized"), writer, 403)
+		return
+	}
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(204)
+}

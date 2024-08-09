@@ -215,7 +215,7 @@ func (state *apiState) Refresh(writer http.ResponseWriter, request *http.Request
 }
 
 func (state *apiState) CreateToken(user database.User) string {
-	expires := time.Now().Add(time.Duration(60*60) * time.Second)
+	expires := time.Now().Add(time.Duration(1) * time.Hour)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "chirpy",
 		IssuedAt:  jwt.NewNumericDate(time.Now()),

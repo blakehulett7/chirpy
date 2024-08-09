@@ -99,16 +99,14 @@ func (databaseAddress *Database) CreateUser(email string, password string) User 
 		fmt.Println(error)
 		return User{}
 	}
-	hexData := make([]byte, 256)
+	hexData := make([]byte, 32)
 	rand.Read(hexData)
 	hexString := hex.EncodeToString(hexData)
-	fmt.Println("hexstring: ", hexString)
-	expires := time.Now().Add(time.Duration(60 * 60 * 24 * 60))
+	expires := time.Now().AddDate(0, 0, 60)
 	refreshToken := RefreshToken{
 		Token:   hexString,
 		Expires: expires,
 	}
-	fmt.Println("refreshtoken: ", refreshToken)
 	user := User{
 		Id:           id,
 		Email:        email,
@@ -152,10 +150,11 @@ func (databaseAddress *Database) UpdateUserCredentials(id int, email string, pas
 		return User{}
 	}
 	updatedUserInfo := User{
-		Id:       id,
-		Email:    email,
-		Password: string(passwordHash),
-		Token:    oldUserInfo.Token,
+		Id:           id,
+		Email:        email,
+		Password:     string(passwordHash),
+		Token:        oldUserInfo.Token,
+		RefreshToken: oldUserInfo.RefreshToken,
 	}
 	db.Users[id] = updatedUserInfo
 	databaseAddress.SaveDatabase(db)
@@ -164,9 +163,9 @@ func (databaseAddress *Database) UpdateUserCredentials(id int, email string, pas
 
 func (databaseAddress *Database) RefreshTokenIsValid(RefreshToken string) (bool, User) {
 	db := databaseAddress.LoadDatabase()
-	fmt.Println(db.Users)
 	for _, user := range db.Users {
 		fmt.Println(RefreshToken, "<div>", user.RefreshToken.Token)
+		fmt.Println("Now: ", time.Now(), "Expires: ", user.RefreshToken.Expires)
 		if RefreshToken == user.RefreshToken.Token {
 			fmt.Println("Found refresh token")
 			if time.Now().Before(user.RefreshToken.Expires) {

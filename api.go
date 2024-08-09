@@ -225,3 +225,16 @@ func (state *apiState) CreateToken(user database.User) string {
 	signedToken, _ := token.SignedString(state.jwtSecret)
 	return signedToken
 }
+
+func (state *apiState) Revoke(writer http.ResponseWriter, request *http.Request) {
+	bearerToken := request.Header.Get("Authorization")
+	givenToken, _ := strings.CutPrefix(bearerToken, "Bearer ")
+	valid, user := state.db.RefreshTokenIsValid(givenToken)
+	if !valid {
+		JsonResponse([]byte("Unauthorized, bad refresh token"), writer, 401)
+		return
+	}
+	state.db.RevokeRefreshToken(user)
+	writer.Header().Add("Content-Type", "application/json")
+	writer.WriteHeader(204)
+}

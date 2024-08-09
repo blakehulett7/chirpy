@@ -34,6 +34,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps/{id}", apiStateAddress.GetaBitChirpy)
 	mux.HandleFunc("GET /api/healthz", handler)
 	mux.HandleFunc("POST /api/refresh", apiStateAddress.Refresh)
+	mux.HandleFunc("POST /api/revoke", apiStateAddress.Revoke)
 	mux.HandleFunc("POST /api/users", apiStateAddress.CreateUser)
 	mux.HandleFunc("PUT /api/users", apiStateAddress.UpdateUser)
 	mux.HandleFunc("POST /api/login", apiStateAddress.Login)

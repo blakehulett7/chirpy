@@ -175,3 +175,10 @@ func (databaseAddress *Database) RefreshTokenIsValid(RefreshToken string) (bool,
 	}
 	return false, User{}
 }
+
+func (databaseAddress *Database) RevokeRefreshToken(user User) {
+	db := databaseAddress.LoadDatabase()
+	user.RefreshToken = RefreshToken{}
+	db.Users[user.Id] = user
+	databaseAddress.SaveDatabase(db)
+}

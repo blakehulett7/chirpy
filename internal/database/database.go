@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Chirp struct {
@@ -86,11 +88,26 @@ func (databaseAddress *Database) CreateChirp(body string, authorId int) Chirp {
 	return chirp
 }
 
-func (databaseAddress *Database) GetChirps() []Chirp {
+func (databaseAddress *Database) GetChirps(query string) []Chirp {
 	db := databaseAddress.LoadDatabase()
+	queryPresent := false
+	var authorId int
+	if query != "" {
+		queryPresent = true
+		authorId, _ = strconv.Atoi(query)
+	}
 	chirpArray := []Chirp{}
-	for i := 1; i <= len(db.Chirps); i++ {
-		chirpArray = append(chirpArray, db.Chirps[i])
+	if !queryPresent {
+		for i := 1; i <= len(db.Chirps); i++ {
+			chirpArray = append(chirpArray, db.Chirps[i])
+		}
+		return chirpArray
+	}
+	for _, chirp := range db.Chirps {
+		if chirp.AuthorId != authorId {
+			continue
+		}
+		chirpArray = append(chirpArray, chirp)
 	}
 	return chirpArray
 }

@@ -92,13 +92,14 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 }
 
 func (state *apiState) GetChirpy(writer http.ResponseWriter, request *http.Request) {
-	chirpArray := state.db.GetChirps()
+	query := request.URL.Query().Get("author_id")
+	chirpArray := state.db.GetChirps(query)
 	responseData, _ := json.Marshal(chirpArray)
 	JsonResponse(responseData, writer, 200)
 }
 
 func (state *apiState) GetaBitChirpy(writer http.ResponseWriter, request *http.Request) {
-	chirpArray := state.db.GetChirps()
+	chirpArray := state.db.GetChirps("")
 	indexString := request.PathValue("id")
 	index, _ := strconv.Atoi(indexString)
 	index--

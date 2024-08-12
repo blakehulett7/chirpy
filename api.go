@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"internal/database"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -92,8 +93,12 @@ func (state *apiState) PostChirp(writer http.ResponseWriter, request *http.Reque
 }
 
 func (state *apiState) GetChirpy(writer http.ResponseWriter, request *http.Request) {
-	query := request.URL.Query().Get("author_id")
-	chirpArray := state.db.GetChirps(query)
+	authorQuery := request.URL.Query().Get("author_id")
+	sortQuery := request.URL.Query().Get("sort")
+	chirpArray := state.db.GetChirps(authorQuery)
+	if sortQuery == "desc" {
+		slices.Reverse(chirpArray)
+	}
 	responseData, _ := json.Marshal(chirpArray)
 	JsonResponse(responseData, writer, 200)
 }
